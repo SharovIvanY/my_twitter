@@ -8,6 +8,11 @@ function debug($var, $stop = false){
 	if ($stop) die;
 }
 
+function redirect($link = HOST){
+	header("Location: $link");
+	die;
+}
+
 function get_url($page = ''){
 	return HOST . "/$page";
 }
@@ -42,11 +47,18 @@ function db_query($sql, $exec = false){
 	return db()->query($sql);
 }
 
-function get_posts($user_id = 0){
+function get_posts($user_id = 0, $sort = false){
+	$sorting = 'DESC';
+
+	if ($sort) $sorting = 'ASC';
+
 	if ($user_id > 0) return db_query("SELECT posts.*, users.name, users.login,
-	  	users.avatar FROM `posts` JOIN `users` ON users.id = posts.user_id WHERE posts.user_id = $user_id")->fetchAll();
+	  		users.avatar FROM `posts` JOIN `users` ON users.id = posts.user_id WHERE posts.user_id = $user_id
+			ORDER BY `posts`.`date` $sorting;")->fetchAll();
+
 	return db_query("SELECT posts.*, users.name, users.login,
-		users.avatar FROM `posts` JOIN `users` ON users.id = posts.user_id")->fetchAll();
+		users.avatar FROM `posts` JOIN `users` ON users.id = posts.user_id 
+		ORDER BY `posts`.`date` $sorting;")->fetchAll();
 }
 
 function get_user_info($login){
@@ -72,16 +84,16 @@ function register_user($auth_date){
 
 	if (!empty($user)){
 		$_SESSION['error'] = 'Пользователь ' . $auth_date['login'] . ' уже существует';
-		redirect('register.php');
+		redirect(get_url('register.php'));
 	}
 
 	if ($auth_date['pass'] !== $auth_date['pass2']){
 		$_SESSION['error'] = 'Пароли не совпадают';
-		redirect('register.php');
+		redirect(get_url('register.php'));
 	}
 
 	if (add_user($auth_date['login'], $auth_date['pass'])){
-		redirect('');
+		redirect(get_url());
 	}
 }
 
@@ -96,16 +108,16 @@ function login($auth_date){
 
 	if (empty($user)){
 		$_SESSION['error'] = 'Пользователь ' . $auth_date['login'] . ' не найден';
-		redirect('');
+		redirect(get_url());
 	}
 
 	if (password_verify($auth_date['pass'], $user['pass'])){
 		$_SESSION['user'] = $user;
 		$_SESSION['error'] = '';
-		redirect('user_posts.php');
+		redirect(get_url('user_posts.php'));
 	} else {
 		$_SESSION['error'] = 'Пароль неверный';
-		redirect('');
+		redirect(get_url());
 	}
 }
 
@@ -118,8 +130,32 @@ function get_error_message(){
 	return $error;
 }
 
-function redirect($page){
-	header("Location: " . get_url($page));
-	die;
+function logged_in(){
+	return isset($_SESSION['user']['id']) && !empty($_SESSION['user']['id']);
 }
+
+function add_post($text, $image){
+	$text = trim($text);
+	if (mb_strlen($text) > 255){
+		$text = mb_substr($text, 0, 250) . ' ...';
+	}
+
+	if (str_word_count($text) > 50){
+		$text = mb_substr($text, 0, 250) . ' ...';
+	}
+
+	$text = preg_replace('/\s+/', ' ', $text);
+
+	$user_id = $_SESSION['user']['id'];
+	$sql = "INSERT INTO `posts` (`id`, `user_id`, `text`, `image`, `date`) 
+	VALUES (NULL, '$user_id', '$text', '$image', CURRENT_TIMESTAMP)";
+	return db_query($sql, true);
+}
+
+function delete_post($id){
+	if (!is_numeric($id)) return false;
+	$user_id = $_SESSION['user']['id'];
+	return db_query("DELETE FROM `posts` WHERE `id` = $id AND `user_id` = $user_id;", true);
+}
+
 ?>

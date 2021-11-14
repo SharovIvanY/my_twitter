@@ -1,4 +1,4 @@
 <?php
 include_once "functions.php";
 session_destroy();
-redirect('');
+redirect(get_url());
