@@ -5,4 +5,6 @@
 	define('DB_NAME', 'twitter_sql');
 	define('DB_USER', 'root');
 	define('DB_PASS', '');
+
+	session_start();
 ?>

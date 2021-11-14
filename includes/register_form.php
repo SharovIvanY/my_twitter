@@ -1,6 +1,8 @@
 <section class="wrapper">
 	<h2 class="tweet-form__title"><?php echo $title; ?></h2>
-	<div class="tweet-form__error">Что-то пошло не так</div>
+	<?php if ($error) {?>
+		<div class="tweet-form__error"><?php echo $error; ?></div>
+	<?php }?>
 	<form class="tweet-form" action="<?php echo get_url('includes/sign_up.php'); ?>" method="post">
 		<div class="tweet-form__wrapper_inputs">
 			<input type="text" class="tweet-form__input" placeholder="Логин" name="login" required>
